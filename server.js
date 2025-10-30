@@ -1,13 +1,20 @@
-#!/usr/bin/env node
-var prerender = require('./lib');
+import prerender from 'prerender';
+import puppeteer from 'puppeteer';
 
-var server = prerender();
+const server = prerender({
+  port: process.env.PORT || 10000,
+  chromeLocation: puppeteer.executablePath(),
+  chromeFlags: [
+    '--no-sandbox',
+    '--headless',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--disable-setuid-sandbox',
+    '--disable-software-rasterizer',
+    '--no-zygote',
+  ],
+});
 
-server.use(prerender.sendPrerenderHeader());
-server.use(prerender.browserForceRestart());
-// server.use(prerender.blockResources());
-server.use(prerender.addMetaTags());
 server.use(prerender.removeScriptTags());
-server.use(prerender.httpHeaders());
-
+server.use(prerender.blacklist());
 server.start();
