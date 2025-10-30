@@ -13,11 +13,9 @@ if (!fs.existsSync(cacheDir)) {
 let chromePath;
 
 try {
-  // Try to install chrome manually in Render environment (in case postinstall skipped)
   console.log('Installing Chrome if not present...');
   execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
 
-  // Look for Chrome binary inside cache
   const basePath = path.join(cacheDir, 'chrome');
   const versionDirs = fs.readdirSync(basePath);
   const firstDir = versionDirs[0];
@@ -29,10 +27,11 @@ try {
   chromePath = puppeteer.executablePath();
 }
 
-// Set environment variable for Puppeteer
+// Set environment variables
 process.env.PUPPETEER_EXECUTABLE_PATH = chromePath;
 process.env.CHROME_PATH = chromePath;
 
+// --- IMPORTANT FIX STARTS HERE ---
 const server = prerender({
   port: process.env.PORT || 10000,
   chromeLocation: chromePath,
@@ -43,8 +42,14 @@ const server = prerender({
     '--disable-gpu',
     '--no-zygote',
     '--headless=new',
+    '--remote-debugging-address=0.0.0.0', // ✅ Enables Puppeteer connection
+    '--remote-debugging-port=9222',       // ✅ Required for Render
+    '--hide-scrollbars',
+    '--mute-audio',
   ],
+  logRequests: true, // ✅ optional, logs all incoming requests
 });
+// --- IMPORTANT FIX ENDS HERE ---
 
 server.use(prerender.removeScriptTags());
 server.use(prerender.blacklist());
